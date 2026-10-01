@@ -38,10 +38,19 @@ public class OrderHistoryController_24110162 extends HttpServlet {
         HttpSession session = req.getSession();
         User_24110162 currentUser = (User_24110162) session.getAttribute("account");
 
+        // Yêu cầu bắt buộc đăng nhập để xem lịch sử đơn hàng của tài khoản
+        if (currentUser == null) {
+            session.setAttribute("msgWarning", "Vui lòng đăng nhập để xem lịch sử đơn hàng của bạn!");
+            String query = req.getQueryString();
+            session.setAttribute("redirectUrl", req.getContextPath() + "/orders" + (query != null ? "?" + query : ""));
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
+        }
+
         // Xử lý hủy đơn hàng (nếu có action cancel)
         if (uri.contains("/order/cancel")) {
             String orderId = req.getParameter("orderId");
-            String username = (currentUser != null) ? currentUser.getUsername() : "";
+            String username = currentUser.getUsername();
             boolean success = orderService.cancelOrder(orderId, username);
             if (success) {
                 req.getSession().setAttribute("msgSuccess", "Đã hủy đơn hàng #" + orderId + " thành công!");
@@ -61,31 +70,21 @@ public class OrderHistoryController_24110162 extends HttpServlet {
         List<Order_24110162> orders;
         List<Order_24110162> allUserOrders;
 
-        // Nếu đã đăng nhập và là user thường -> xem đơn của mình
-        if (currentUser != null && !currentUser.isAdmin()) {
-            allUserOrders = orderService.getOrdersByUsername(currentUser.getUsername());
-            if ("Tất cả".equals(status)) {
-                orders = allUserOrders;
-            } else {
-                orders = orderService.getOrdersByUsernameAndStatus(currentUser.getUsername(), status);
-            }
+        // Chỉ hiển thị đơn hàng của chính tài khoản đang đăng nhập
+        allUserOrders = orderService.getOrdersByUsername(currentUser.getUsername());
+        if ("Tất cả".equals(status)) {
+            orders = allUserOrders;
         } else {
-            // Khách vãng lai hoặc Admin xem danh sách đơn hàng
-            allUserOrders = orderService.getAllOrders();
-            if ("Tất cả".equals(status)) {
-                orders = allUserOrders;
-            } else {
-                orders = orderService.getOrdersByStatus(status);
-            }
+            orders = orderService.getOrdersByUsernameAndStatus(currentUser.getUsername(), status);
         }
 
-        // Thống kê số lượng đơn cho từng trạng thái
+        // Thống kê số lượng đơn cho từng trạng thái của riêng user này
         Map<String, Integer> statusCounts = new HashMap<>();
         statusCounts.put("Tất cả", allUserOrders.size());
         for (String st : ALL_STATUSES) {
             int count = 0;
             for (Order_24110162 ord : allUserOrders) {
-                if (ord.getStatus() != null && ord.getStatus().equalsIgnoreCase(st)) {
+                if (ord.getStatus() != null && ord.getStatus().trim().equalsIgnoreCase(st.trim())) {
                     count++;
                 }
             }

@@ -18,6 +18,12 @@ public class LoginServlet_24110162 extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession();
+        String msgWarning = (String) session.getAttribute("msgWarning");
+        if (msgWarning != null) {
+            req.setAttribute("error", msgWarning);
+            session.removeAttribute("msgWarning");
+        }
         req.getRequestDispatcher("/views/web/login.jsp").forward(req, resp);
     }
 
@@ -33,6 +39,14 @@ public class LoginServlet_24110162 extends HttpServlet {
             // Tạo session lưu thông tin account
             HttpSession session = req.getSession();
             session.setAttribute("account", user);
+
+            // Kiểm tra xem có URL cần quay lại trước khi đăng nhập không (VD: checkout, orders)
+            String redirectUrl = (String) session.getAttribute("redirectUrl");
+            session.removeAttribute("redirectUrl");
+            if (redirectUrl != null && !redirectUrl.trim().isEmpty()) {
+                resp.sendRedirect(redirectUrl);
+                return;
+            }
 
             // Phân quyền theo Câu 2
             if (user.isAdmin()) {

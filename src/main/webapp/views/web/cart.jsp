@@ -77,9 +77,18 @@
                 &larr; Ti&#7871;p t&#7909;c xem Video
             </a>
             
-            <a href="<c:url value='/checkout'/>" style="background: #27ae60; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(39,174,96,0.3); display: flex; align-items: center; gap: 8px;">
-                &#128666; Ti&#7871;n h&agrave;nh &#273;&#7863;t h&agrave;ng COD &rarr;
-            </a>
+            <c:choose>
+                <c:when test="${not empty sessionScope.account}">
+                    <a href="<c:url value='/checkout'/>" style="background: #27ae60; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(39,174,96,0.3); display: flex; align-items: center; gap: 8px;">
+                        🚚 Tiến hành đặt hàng COD &rarr;
+                    </a>
+                </c:when>
+                <c:otherwise>
+                    <a href="<c:url value='/checkout'/>" style="background: #e67e22; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(230,126,34,0.3); display: flex; align-items: center; gap: 8px;" title="Vui lòng đăng nhập để tiến hành đặt hàng">
+                        🔒 Đăng nhập để đặt hàng COD &rarr;
+                    </a>
+                </c:otherwise>
+            </c:choose>
         </div>
     </c:if>
 </div>

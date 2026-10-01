@@ -38,6 +38,14 @@ public class CheckoutController_24110162 extends HttpServlet {
 
         // 2. Màn hình thanh toán COD
         HttpSession session = req.getSession();
+        User_24110162 user = (User_24110162) session.getAttribute("account");
+        if (user == null) {
+            session.setAttribute("msgWarning", "Vui lòng đăng nhập tài khoản để tiến hành đặt hàng!");
+            session.setAttribute("redirectUrl", req.getContextPath() + "/checkout");
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
+        }
+
         @SuppressWarnings("unchecked")
         List<CartItem_24110162> cart = (List<CartItem_24110162>) session.getAttribute("cart");
 
@@ -56,12 +64,9 @@ public class CheckoutController_24110162 extends HttpServlet {
         req.setAttribute("totalAmount", subtotal);
 
         // Tự động điền thông tin nếu User đã đăng nhập
-        User_24110162 user = (User_24110162) session.getAttribute("account");
-        if (user != null) {
-            req.setAttribute("fullname", user.getFullname());
-            req.setAttribute("email", user.getEmail());
-            req.setAttribute("phone", user.getPhone());
-        }
+        req.setAttribute("fullname", user.getFullname());
+        req.setAttribute("email", user.getEmail());
+        req.setAttribute("phone", user.getPhone());
 
         req.getRequestDispatcher("/views/web/checkout.jsp").forward(req, resp);
     }
@@ -70,6 +75,14 @@ public class CheckoutController_24110162 extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
         HttpSession session = req.getSession();
+
+        User_24110162 user = (User_24110162) session.getAttribute("account");
+        if (user == null) {
+            session.setAttribute("msgWarning", "Vui lòng đăng nhập tài khoản để tiến hành đặt hàng!");
+            session.setAttribute("redirectUrl", req.getContextPath() + "/checkout");
+            resp.sendRedirect(req.getContextPath() + "/login");
+            return;
+        }
 
         @SuppressWarnings("unchecked")
         List<CartItem_24110162> cart = (List<CartItem_24110162>) session.getAttribute("cart");
@@ -105,9 +118,8 @@ public class CheckoutController_24110162 extends HttpServlet {
             return;
         }
 
-        // Lấy username nếu đã đăng nhập
-        User_24110162 user = (User_24110162) session.getAttribute("account");
-        String username = (user != null) ? user.getUsername() : "Guest";
+        // Lấy chính xác username của user đã đăng nhập
+        String username = user.getUsername();
 
         // Xử lý tạo đơn hàng COD
         Order_24110162 order = orderService.processCODOrder(username, fullname, email, phone, address, note, cart);

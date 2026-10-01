@@ -167,15 +167,15 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
 
     @Override
     public List<Order_24110162> findByUsername(String username) {
-        if (username == null || username.trim().isEmpty() || username.equalsIgnoreCase("Khách vãng lai")) {
-            return findAll();
+        if (username == null || username.trim().isEmpty()) {
+            return new ArrayList<>();
         }
         ensureTableExists();
-        String sql = "SELECT * FROM Orders_24110162 WHERE Username = ? ORDER BY OrderDate DESC";
+        String sql = "SELECT * FROM Orders_24110162 WHERE LTRIM(RTRIM(Username)) = ? ORDER BY OrderDate DESC";
         List<Order_24110162> orders = new ArrayList<>();
         try (Connection conn = new DBConnect_24110162().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setNString(1, username);
+            ps.setNString(1, username.trim());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     orders.add(mapOrder(rs));
@@ -188,7 +188,7 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
         } catch (Exception e) {
             List<Order_24110162> list = new ArrayList<>();
             for (Order_24110162 ord : memoryOrders) {
-                if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)) {
+                if (ord.getUsername() != null && ord.getUsername().trim().equalsIgnoreCase(username.trim())) {
                     list.add(ord);
                 }
             }
@@ -198,18 +198,18 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
 
     @Override
     public List<Order_24110162> findByUsernameAndStatus(String username, String status) {
+        if (username == null || username.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
         if (status == null || status.trim().isEmpty() || status.equalsIgnoreCase("ALL") || status.equals("Tất cả")) {
             return findByUsername(username);
         }
-        if (username == null || username.trim().isEmpty() || username.equalsIgnoreCase("Khách vãng lai")) {
-            return findByStatus(status);
-        }
         ensureTableExists();
-        String sql = "SELECT * FROM Orders_24110162 WHERE Username = ? AND LTRIM(RTRIM(Status)) = ? ORDER BY OrderDate DESC";
+        String sql = "SELECT * FROM Orders_24110162 WHERE LTRIM(RTRIM(Username)) = ? AND LTRIM(RTRIM(Status)) = ? ORDER BY OrderDate DESC";
         List<Order_24110162> orders = new ArrayList<>();
         try (Connection conn = new DBConnect_24110162().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setNString(1, username);
+            ps.setNString(1, username.trim());
             ps.setNString(2, status.trim());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -223,7 +223,7 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
         } catch (Exception e) {
             List<Order_24110162> list = new ArrayList<>();
             for (Order_24110162 ord : memoryOrders) {
-                if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)
+                if (ord.getUsername() != null && ord.getUsername().trim().equalsIgnoreCase(username.trim())
                         && ord.getStatus() != null && ord.getStatus().trim().equalsIgnoreCase(status.trim())) {
                     list.add(ord);
                 }
