@@ -1,0 +1,8 @@
+target/
+*.class
+.settings/
+.project
+.classpath
+*.log
+src.bak/
+.vscode/
