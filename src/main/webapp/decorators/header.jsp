@@ -13,20 +13,22 @@
                 <a href="<c:url value='/home' />" style="color: white; text-decoration: none;">VideoShare</a>
             </div>
             <div>
-                <a href="<c:url value='/home' />" style="color: white; margin-right: 15px; text-decoration: none;">Trang Ch&#7911;</a>
-                <a href="<c:url value='/videos' />" style="color: white; margin-right: 15px; text-decoration: none;">S&#7843;n ph&#7849;m</a>
-                <a href="<c:url value='/cart' />" style="color: #2ecc71; margin-right: 15px; text-decoration: none; font-weight: bold;">&#128722; Gi&#7887; h&agrave;ng</a>
+                <a href="<c:url value='/home' />" style="color: white; margin-right: 15px; text-decoration: none;">Trang Chủ</a>
+                <a href="<c:url value='/videos' />" style="color: white; margin-right: 15px; text-decoration: none;">Sản phẩm</a>
+                <a href="<c:url value='/cart' />" style="color: #2ecc71; margin-right: 15px; text-decoration: none; font-weight: bold;">🛒 Giỏ hàng</a>
+                <a href="<c:url value='/orders' />" style="color: #60a5fa; margin-right: 15px; text-decoration: none; font-weight: bold;">📜 Đơn hàng</a>
                 
                 <c:choose>
                     <c:when test="${sessionScope.account != null}">
-                        <span style="margin-right: 15px;">Ch&agrave;o, ${sessionScope.account.username}</span>
+                        <span style="margin-right: 15px;">Chào, ${sessionScope.account.username}</span>
                         <c:if test="${sessionScope.account.admin}">
-                            <a href="<c:url value='/admin/home' />" style="color: #f1c40f; margin-right: 15px; text-decoration: none;">Trang qu&#7843;n tr&#7883;</a>
+                            <a href="<c:url value='/admin/home' />" style="color: #f1c40f; margin-right: 15px; text-decoration: none;">Trang quản trị</a>
+                            <a href="<c:url value='/admin/orders' />" style="color: #fbbf24; margin-right: 15px; text-decoration: none;">📦 QL Đơn hàng</a>
                         </c:if>
-                        <a href="<c:url value='/logout' />" style="color: #e74c3c; text-decoration: none;">&#272;&#259;ng xu&#7845;t</a>
+                        <a href="<c:url value='/logout' />" style="color: #e74c3c; text-decoration: none;">Đăng xuất</a>
                     </c:when>
                     <c:otherwise>
-                        <a href="<c:url value='/login' />" style="color: white; text-decoration: none;">&#272;&#259;ng nh&#7853;p</a>
+                        <a href="<c:url value='/login' />" style="color: white; text-decoration: none;">Đăng nhập</a>
                     </c:otherwise>
                 </c:choose>
             </div>

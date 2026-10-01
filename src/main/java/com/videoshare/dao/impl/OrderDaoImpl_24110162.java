@@ -52,14 +52,12 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
             stmt.executeUpdate(sqlDetails);
             tableChecked = true;
         } catch (Exception e) {
-            // DB fallback
             tableChecked = true;
         }
     }
 
     @Override
     public boolean insert(Order_24110162 order) {
-        // Save to memory store first for instant availability
         memoryOrders.add(0, order);
 
         ensureTableExists();
@@ -80,7 +78,6 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
             ps.setTimestamp(11, order.getOrderDate() != null ? order.getOrderDate() : new Timestamp(System.currentTimeMillis()));
             ps.executeUpdate();
 
-            // Insert order items
             String itemSql = "INSERT INTO OrderDetails_24110162(OrderId, VideoId, VideoTitle, Price, Quantity, TotalPrice) VALUES (?, ?, ?, ?, ?, ?)";
             try (PreparedStatement ips = conn.prepareStatement(itemSql)) {
                 for (OrderItem_24110162 item : order.getItems()) {
@@ -96,7 +93,6 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
             }
             return true;
         } catch (Exception e) {
-            // Memory order already persisted
             return true;
         }
     }
@@ -129,7 +125,6 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
                             rs.getString("Status"),
                             rs.getTimestamp("OrderDate")
                     );
-                    // Load items
                     String itemSql = "SELECT * FROM OrderDetails_24110162 WHERE OrderId = ?";
                     try (PreparedStatement ips = conn.prepareStatement(itemSql)) {
                         ips.setString(1, orderId);
@@ -163,8 +158,24 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
     public List<Order_24110162> findByUsername(String username) {
         List<Order_24110162> list = new ArrayList<>();
         for (Order_24110162 ord : memoryOrders) {
-            if (ord.getUsername() != null && ord.getUsername().equals(username)) {
+            if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)) {
                 list.add(ord);
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public List<Order_24110162> findByUsernameAndStatus(String username, String status) {
+        if (status == null || status.trim().isEmpty() || status.equalsIgnoreCase("ALL") || status.equals("Tất cả")) {
+            return findByUsername(username);
+        }
+        List<Order_24110162> list = new ArrayList<>();
+        for (Order_24110162 ord : memoryOrders) {
+            if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)) {
+                if (ord.getStatus() != null && ord.getStatus().equalsIgnoreCase(status.trim())) {
+                    list.add(ord);
+                }
             }
         }
         return list;
@@ -173,5 +184,40 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
     @Override
     public List<Order_24110162> findAll() {
         return new ArrayList<>(memoryOrders);
+    }
+
+    @Override
+    public List<Order_24110162> findByStatus(String status) {
+        if (status == null || status.trim().isEmpty() || status.equalsIgnoreCase("ALL") || status.equals("Tất cả")) {
+            return findAll();
+        }
+        List<Order_24110162> list = new ArrayList<>();
+        for (Order_24110162 ord : memoryOrders) {
+            if (ord.getStatus() != null && ord.getStatus().equalsIgnoreCase(status.trim())) {
+                list.add(ord);
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public boolean updateStatus(String orderId, String newStatus) {
+        for (Order_24110162 ord : memoryOrders) {
+            if (ord.getOrderId().equals(orderId)) {
+                ord.setStatus(newStatus);
+            }
+        }
+
+        ensureTableExists();
+        String sql = "UPDATE Orders_24110162 SET Status = ? WHERE OrderId = ?";
+        try (Connection conn = new DBConnect_24110162().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newStatus);
+            ps.setString(2, orderId);
+            ps.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            return true;
+        }
     }
 }

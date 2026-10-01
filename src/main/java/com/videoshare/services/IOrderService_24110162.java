@@ -9,4 +9,9 @@ public interface IOrderService_24110162 {
                                    String address, String note, List<CartItem_24110162> cartItems);
     Order_24110162 getOrderById(String orderId);
     List<Order_24110162> getOrdersByUsername(String username);
+    List<Order_24110162> getOrdersByUsernameAndStatus(String username, String status);
+    List<Order_24110162> getAllOrders();
+    List<Order_24110162> getOrdersByStatus(String status);
+    boolean updateOrderStatus(String orderId, String newStatus);
+    boolean cancelOrder(String orderId, String username);
 }

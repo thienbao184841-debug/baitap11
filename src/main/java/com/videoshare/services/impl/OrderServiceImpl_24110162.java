@@ -24,7 +24,7 @@ public class OrderServiceImpl_24110162 implements IOrderService_24110162 {
             return null;
         }
 
-        // Tạo mã đơn hàng độc nhất: COD-yyyyMMdd-XXXX
+        // Tạo mã đơn hàng dạng: COD-yyyyMMdd-XXXX
         String datePrefix = new SimpleDateFormat("yyyyMMdd").format(new Date());
         int randomSuffix = 1000 + new Random().nextInt(9000);
         String orderId = "COD-" + datePrefix + "-" + randomSuffix;
@@ -52,7 +52,7 @@ public class OrderServiceImpl_24110162 implements IOrderService_24110162 {
                 note,
                 totalAmount,
                 "COD (Thanh toán khi nhận hàng)",
-                "Chờ xử lý & Giao hàng COD",
+                "Đơn hàng mới", // Trạng thái khởi tạo mặc định: Đơn hàng mới
                 new Timestamp(System.currentTimeMillis())
         );
         order.setItems(orderItems);
@@ -69,5 +69,37 @@ public class OrderServiceImpl_24110162 implements IOrderService_24110162 {
     @Override
     public List<Order_24110162> getOrdersByUsername(String username) {
         return orderDao.findByUsername(username);
+    }
+
+    @Override
+    public List<Order_24110162> getOrdersByUsernameAndStatus(String username, String status) {
+        return orderDao.findByUsernameAndStatus(username, status);
+    }
+
+    @Override
+    public List<Order_24110162> getAllOrders() {
+        return orderDao.findAll();
+    }
+
+    @Override
+    public List<Order_24110162> getOrdersByStatus(String status) {
+        return orderDao.findByStatus(status);
+    }
+
+    @Override
+    public boolean updateOrderStatus(String orderId, String newStatus) {
+        return orderDao.updateStatus(orderId, newStatus);
+    }
+
+    @Override
+    public boolean cancelOrder(String orderId, String username) {
+        Order_24110162 order = orderDao.findById(orderId);
+        if (order == null) return false;
+
+        // Cho phép hủy nếu đơn hàng đang ở trạng thái 'Đơn hàng mới' hoặc 'Đã xác nhận'
+        if ("Đơn hàng mới".equalsIgnoreCase(order.getStatus()) || "Đã xác nhận".equalsIgnoreCase(order.getStatus())) {
+            return orderDao.updateStatus(orderId, "Đơn hàng hủy");
+        }
+        return false;
     }
 }
