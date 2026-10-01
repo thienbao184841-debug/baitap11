@@ -56,6 +56,47 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
         }
     }
 
+    private Order_24110162 mapOrder(ResultSet rs) throws Exception {
+        return new Order_24110162(
+                rs.getString("OrderId"),
+                rs.getString("Username"),
+                rs.getString("Fullname"),
+                rs.getString("Email"),
+                rs.getString("Phone"),
+                rs.getString("Address"),
+                rs.getString("Note"),
+                rs.getDouble("TotalAmount"),
+                rs.getString("PaymentMethod"),
+                rs.getString("Status"),
+                rs.getTimestamp("OrderDate")
+        );
+    }
+
+    private void loadOrderItems(Connection conn, Order_24110162 order) {
+        String itemSql = "SELECT * FROM OrderDetails_24110162 WHERE OrderId = ?";
+        try (PreparedStatement ips = conn.prepareStatement(itemSql)) {
+            ips.setString(1, order.getOrderId());
+            try (ResultSet irs = ips.executeQuery()) {
+                List<OrderItem_24110162> items = new ArrayList<>();
+                while (irs.next()) {
+                    OrderItem_24110162 item = new OrderItem_24110162(
+                            irs.getString("OrderId"),
+                            irs.getString("VideoId"),
+                            irs.getString("VideoTitle"),
+                            irs.getDouble("Price"),
+                            irs.getInt("Quantity")
+                    );
+                    item.setId(irs.getInt("Id"));
+                    item.setTotalPrice(irs.getDouble("TotalPrice"));
+                    items.add(item);
+                }
+                order.setItems(items);
+            }
+        } catch (Exception e) {
+            // Keep existing items if fail
+        }
+    }
+
     @Override
     public boolean insert(Order_24110162 order) {
         memoryOrders.add(0, order);
@@ -66,15 +107,15 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
         try (Connection conn = new DBConnect_24110162().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, order.getOrderId());
-            ps.setString(2, order.getUsername());
-            ps.setString(3, order.getFullname());
-            ps.setString(4, order.getEmail());
-            ps.setString(5, order.getPhone());
-            ps.setString(6, order.getAddress());
-            ps.setString(7, order.getNote());
+            ps.setNString(2, order.getUsername() != null ? order.getUsername() : "Khách vãng lai");
+            ps.setNString(3, order.getFullname() != null ? order.getFullname() : "");
+            ps.setNString(4, order.getEmail() != null ? order.getEmail() : "");
+            ps.setString(5, order.getPhone() != null ? order.getPhone() : "");
+            ps.setNString(6, order.getAddress() != null ? order.getAddress() : "");
+            ps.setNString(7, order.getNote() != null ? order.getNote() : "");
             ps.setDouble(8, order.getTotalAmount());
-            ps.setString(9, order.getPaymentMethod());
-            ps.setString(10, order.getStatus());
+            ps.setNString(9, order.getPaymentMethod() != null ? order.getPaymentMethod() : "COD");
+            ps.setNString(10, order.getStatus() != null ? order.getStatus() : "Đơn hàng mới");
             ps.setTimestamp(11, order.getOrderDate() != null ? order.getOrderDate() : new Timestamp(System.currentTimeMillis()));
             ps.executeUpdate();
 
@@ -82,8 +123,8 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
             try (PreparedStatement ips = conn.prepareStatement(itemSql)) {
                 for (OrderItem_24110162 item : order.getItems()) {
                     ips.setString(1, order.getOrderId());
-                    ips.setString(2, item.getVideoId());
-                    ips.setString(3, item.getVideoTitle());
+                    ips.setString(2, item.getVideoId() != null ? item.getVideoId() : "");
+                    ips.setNString(3, item.getVideoTitle() != null ? item.getVideoTitle() : "");
                     ips.setDouble(4, item.getPrice());
                     ips.setInt(5, item.getQuantity());
                     ips.setDouble(6, item.getTotalPrice());
@@ -93,18 +134,13 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
             }
             return true;
         } catch (Exception e) {
+            e.printStackTrace();
             return true;
         }
     }
 
     @Override
     public Order_24110162 findById(String orderId) {
-        for (Order_24110162 ord : memoryOrders) {
-            if (ord.getOrderId().equals(orderId)) {
-                return ord;
-            }
-        }
-
         ensureTableExists();
         String sql = "SELECT * FROM Orders_24110162 WHERE OrderId = ?";
         try (Connection conn = new DBConnect_24110162().getConnection();
@@ -112,57 +148,52 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
             ps.setString(1, orderId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Order_24110162 order = new Order_24110162(
-                            rs.getString("OrderId"),
-                            rs.getString("Username"),
-                            rs.getString("Fullname"),
-                            rs.getString("Email"),
-                            rs.getString("Phone"),
-                            rs.getString("Address"),
-                            rs.getString("Note"),
-                            rs.getDouble("TotalAmount"),
-                            rs.getString("PaymentMethod"),
-                            rs.getString("Status"),
-                            rs.getTimestamp("OrderDate")
-                    );
-                    String itemSql = "SELECT * FROM OrderDetails_24110162 WHERE OrderId = ?";
-                    try (PreparedStatement ips = conn.prepareStatement(itemSql)) {
-                        ips.setString(1, orderId);
-                        try (ResultSet irs = ips.executeQuery()) {
-                            List<OrderItem_24110162> items = new ArrayList<>();
-                            while (irs.next()) {
-                                OrderItem_24110162 item = new OrderItem_24110162(
-                                        irs.getString("OrderId"),
-                                        irs.getString("VideoId"),
-                                        irs.getString("VideoTitle"),
-                                        irs.getDouble("Price"),
-                                        irs.getInt("Quantity")
-                                );
-                                item.setId(irs.getInt("Id"));
-                                item.setTotalPrice(irs.getDouble("TotalPrice"));
-                                items.add(item);
-                            }
-                            order.setItems(items);
-                        }
-                    }
-                    return order;
+                    Order_24110162 ord = mapOrder(rs);
+                    loadOrderItems(conn, ord);
+                    return ord;
                 }
             }
         } catch (Exception e) {
             // Fallback
+        }
+
+        for (Order_24110162 ord : memoryOrders) {
+            if (ord.getOrderId().equals(orderId)) {
+                return ord;
+            }
         }
         return null;
     }
 
     @Override
     public List<Order_24110162> findByUsername(String username) {
-        List<Order_24110162> list = new ArrayList<>();
-        for (Order_24110162 ord : memoryOrders) {
-            if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)) {
-                list.add(ord);
-            }
+        if (username == null || username.trim().isEmpty() || username.equalsIgnoreCase("Khách vãng lai")) {
+            return findAll();
         }
-        return list;
+        ensureTableExists();
+        String sql = "SELECT * FROM Orders_24110162 WHERE Username = ? ORDER BY OrderDate DESC";
+        List<Order_24110162> orders = new ArrayList<>();
+        try (Connection conn = new DBConnect_24110162().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setNString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapOrder(rs));
+                }
+            }
+            for (Order_24110162 ord : orders) {
+                loadOrderItems(conn, ord);
+            }
+            return orders;
+        } catch (Exception e) {
+            List<Order_24110162> list = new ArrayList<>();
+            for (Order_24110162 ord : memoryOrders) {
+                if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)) {
+                    list.add(ord);
+                }
+            }
+            return list;
+        }
     }
 
     @Override
@@ -170,20 +201,55 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
         if (status == null || status.trim().isEmpty() || status.equalsIgnoreCase("ALL") || status.equals("Tất cả")) {
             return findByUsername(username);
         }
-        List<Order_24110162> list = new ArrayList<>();
-        for (Order_24110162 ord : memoryOrders) {
-            if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)) {
-                if (ord.getStatus() != null && ord.getStatus().equalsIgnoreCase(status.trim())) {
+        if (username == null || username.trim().isEmpty() || username.equalsIgnoreCase("Khách vãng lai")) {
+            return findByStatus(status);
+        }
+        ensureTableExists();
+        String sql = "SELECT * FROM Orders_24110162 WHERE Username = ? AND LTRIM(RTRIM(Status)) = ? ORDER BY OrderDate DESC";
+        List<Order_24110162> orders = new ArrayList<>();
+        try (Connection conn = new DBConnect_24110162().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setNString(1, username);
+            ps.setNString(2, status.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapOrder(rs));
+                }
+            }
+            for (Order_24110162 ord : orders) {
+                loadOrderItems(conn, ord);
+            }
+            return orders;
+        } catch (Exception e) {
+            List<Order_24110162> list = new ArrayList<>();
+            for (Order_24110162 ord : memoryOrders) {
+                if (ord.getUsername() != null && ord.getUsername().equalsIgnoreCase(username)
+                        && ord.getStatus() != null && ord.getStatus().trim().equalsIgnoreCase(status.trim())) {
                     list.add(ord);
                 }
             }
+            return list;
         }
-        return list;
     }
 
     @Override
     public List<Order_24110162> findAll() {
-        return new ArrayList<>(memoryOrders);
+        ensureTableExists();
+        String sql = "SELECT * FROM Orders_24110162 ORDER BY OrderDate DESC";
+        List<Order_24110162> orders = new ArrayList<>();
+        try (Connection conn = new DBConnect_24110162().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                orders.add(mapOrder(rs));
+            }
+            for (Order_24110162 ord : orders) {
+                loadOrderItems(conn, ord);
+            }
+            return orders;
+        } catch (Exception e) {
+            return new ArrayList<>(memoryOrders);
+        }
     }
 
     @Override
@@ -191,33 +257,50 @@ public class OrderDaoImpl_24110162 implements IOrderDao_24110162 {
         if (status == null || status.trim().isEmpty() || status.equalsIgnoreCase("ALL") || status.equals("Tất cả")) {
             return findAll();
         }
-        List<Order_24110162> list = new ArrayList<>();
-        for (Order_24110162 ord : memoryOrders) {
-            if (ord.getStatus() != null && ord.getStatus().equalsIgnoreCase(status.trim())) {
-                list.add(ord);
+        ensureTableExists();
+        String sql = "SELECT * FROM Orders_24110162 WHERE LTRIM(RTRIM(Status)) = ? ORDER BY OrderDate DESC";
+        List<Order_24110162> orders = new ArrayList<>();
+        try (Connection conn = new DBConnect_24110162().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setNString(1, status.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    orders.add(mapOrder(rs));
+                }
             }
+            for (Order_24110162 ord : orders) {
+                loadOrderItems(conn, ord);
+            }
+            return orders;
+        } catch (Exception e) {
+            List<Order_24110162> list = new ArrayList<>();
+            for (Order_24110162 ord : memoryOrders) {
+                if (ord.getStatus() != null && ord.getStatus().trim().equalsIgnoreCase(status.trim())) {
+                    list.add(ord);
+                }
+            }
+            return list;
         }
-        return list;
     }
 
     @Override
     public boolean updateStatus(String orderId, String newStatus) {
+        ensureTableExists();
+        String sql = "UPDATE Orders_24110162 SET Status = ? WHERE OrderId = ?";
+        try (Connection conn = new DBConnect_24110162().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setNString(1, newStatus);
+            ps.setString(2, orderId);
+            ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         for (Order_24110162 ord : memoryOrders) {
             if (ord.getOrderId().equals(orderId)) {
                 ord.setStatus(newStatus);
             }
         }
-
-        ensureTableExists();
-        String sql = "UPDATE Orders_24110162 SET Status = ? WHERE OrderId = ?";
-        try (Connection conn = new DBConnect_24110162().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, newStatus);
-            ps.setString(2, orderId);
-            ps.executeUpdate();
-            return true;
-        } catch (Exception e) {
-            return true;
-        }
+        return true;
     }
 }
